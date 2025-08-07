@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Online Ticket Booking - 3000 LKR Tickets</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+      background: #f9f9f9;
+    }
+    h2 {
+      text-align: center;
+    }
+    form {
+      background: #fff;
+      padding: 20px;
+      box-shadow: 0 0 10px #ccc;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 15px;
+      border: none;
+      background: #007BFF;
+      color: white;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .seat-map {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 5px;
+      margin-top: 15px;
+      max-height: 500px;
+      overflow-y: auto;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    .seat {
+      padding: 12px 0;
+      background: #e0e0e0;
+      text-align: center;
+      border-radius: 4px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .seat.selected {
+      background: #28a745;
+      color: white;
+    }
+    .seat.booked {
+      background: #dc3545;
+      color: white;
+      pointer-events: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 30px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: left;
+    }
+    th {
+      background: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Online Ticket Booking - 3000 LKR Tickets</h2>
+
+<form id="bookingForm">
+  <label>Name:</label>
+  <input type="text" id="name" required>
+
+  <label>Email:</label>
+  <input type="email" id="email" required>
+
+  <label>Student Name:</label>
+  <input type="text" id="studentName" required>
+
+  <label>Student ID:</label>
+  <input type="text" id="studentID" required>
+
+  <label>Mobile Number:</label>
+  <input type="tel" id="mobile" required>
+
+  <label>Event:</label>
+  <input type="text" id="event" required>
+
+  <label>Select Seats (Max 2):</label>
+  <div class="seat-map" id="seatMap"></div>
+
+  <button type="submit">Book Ticket</button>
+</form>
+
+<table id="ticketTable">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Student Name</th>
+      <th>Student ID</th>
+      <th>Mobile</th>
+      <th>Event</th>
+      <th>Seats</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<button onclick="downloadExcel()">Download Excel</button>
+
+<script>
+  const seatMap = document.getElementById('seatMap');
+  const tableBody = document.querySelector('#ticketTable tbody');
+  const form = document.getElementById('bookingForm');
+  const ticketData = [];
+  const totalSeats = 138;
+
+  // Create 138 seats
+  for (let i = 1; i <= totalSeats; i++) {
+    const seat = document.createElement('div');
+    seat.classList.add('seat');
+    seat.textContent = `S${i}`;
+    seat.dataset.seatNumber = `S${i}`;
+    seat.addEventListener('click', function () {
+      if (seat.classList.contains('booked')) return;
+
+      const selectedSeats = document.querySelectorAll('.seat.selected');
+
+      if (!seat.classList.contains('selected') && selectedSeats.length >= 2) {
+        alert("You can only select up to 2 seats per booking.");
+        return;
+      }
+
+      seat.classList.toggle('selected');
+    });
+    seatMap.appendChild(seat);
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const studentName = document.getElementById('studentName').value.trim();
+    const studentID = document.getElementById('studentID').value.trim();
+    const mobile = document.getElementById('mobile').value.trim();
+    const event = document.getElementById('event').value.trim();
+
+    const selectedSeats = Array.from(document.querySelectorAll('.seat.selected')).map(seat => seat.dataset.seatNumber);
+
+    if (selectedSeats.length === 0) {
+      alert(`Please select at least one seat.`);
+      return;
+    }
+
+    if (selectedSeats.length > 2) {
+      alert(`You can only book a maximum of 2 seats.`);
+      return;
+    }
+
+    // Book selected seats
+    selectedSeats.forEach(seatNum => {
+      const seatElement = document.querySelector(`[data-seat-number="${seatNum}"]`);
+      seatElement.classList.remove('selected');
+      seatElement.classList.add('booked');
+    });
+
+    const booking = {
+      Name: name,
+      Email: email,
+      StudentName: studentName,
+      StudentID: studentID,
+      Mobile: mobile,
+      Event: event,
+      Seats: selectedSeats.join(', ')
+    };
+
+    ticketData.push(booking);
+
+    const row = tableBody.insertRow();
+    row.insertCell(0).textContent = booking.Name;
+    row.insertCell(1).textContent = booking.Email;
+    row.insertCell(2).textContent = booking.StudentName;
+    row.insertCell(3).textContent = booking.StudentID;
+    row.insertCell(4).textContent = booking.Mobile;
+    row.insertCell(5).textContent = booking.Event;
+    row.insertCell(6).textContent = booking.Seats;
+
+    form.reset();
+  });
+
+  function downloadExcel() {
+    const worksheet = XLSX.utils.json_to_sheet(ticketData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Bookings");
+    XLSX.writeFile(workbook, "ticket_bookings_3000_LKR.xlsx");
+  }
+</script>
+
+</body>
+</html>
